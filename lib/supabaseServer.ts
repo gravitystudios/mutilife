@@ -23,7 +23,8 @@ export type Order = {
   customer_phone: string
   entered_address: string
   bottles: number
-  collection_method: 'delivery' | 'collection'
+  line_items?: Array<{ name: string; quantity: number }>
+  collection_method: 'delivery' | 'collection' | 'DELIVERY' | 'COLLECTION'
   waybill_no: string | null
   pin: string | null
   created_at: string

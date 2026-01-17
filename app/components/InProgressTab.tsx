@@ -86,10 +86,35 @@ export default function InProgressTab() {
             <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{order.entered_address}</p>
           </div>
           <div>
-            <p className="text-xs sm:text-sm text-gray-700">
-              <span className="font-medium">Bottles:</span> {order.bottles}
-            </p>
+            <p className="text-xs sm:text-sm text-gray-700 font-medium">Items:</p>
+            {order.line_items && Array.isArray(order.line_items) ? (
+              <ul className="text-xs sm:text-sm text-gray-600 list-disc list-inside">
+                {order.line_items.map((item: any, idx: number) => (
+                  <li key={idx}>{item.name} x {item.quantity}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs sm:text-sm text-gray-600">No items</p>
+            )}
           </div>
+          {isDelivery && (
+            <>
+              {order.waybill_no && (
+                <div>
+                  <p className="text-xs sm:text-sm text-gray-700">
+                    <span className="font-medium">Waybill:</span> {order.waybill_no}
+                  </p>
+                </div>
+              )}
+              {order.pin && (
+                <div>
+                  <p className="text-xs sm:text-sm text-gray-700">
+                    <span className="font-medium">PIN:</span> {order.pin}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <button
