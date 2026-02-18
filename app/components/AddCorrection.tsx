@@ -20,7 +20,6 @@ interface Correction {
 export default function AddCorrection({ onBack }: AddCorrectionProps) {
   const [question, setQuestion] = useState('')
   const [correctAnswer, setCorrectAnswer] = useState('')
-  const [mode, setMode] = useState('override')
   const [tags, setTags] = useState('')
   const [saving, setSaving] = useState(false)
   const [corrections, setCorrections] = useState<Correction[]>([])
@@ -62,7 +61,7 @@ export default function AddCorrection({ onBack }: AddCorrectionProps) {
         body: JSON.stringify([{
           question,
           correct_answer: correctAnswer,
-          mode,
+          mode: 'faq',
           tags: tags.split(',').map(t => t.trim()).filter(Boolean),
           updated_by: 'admin@mutilife.co.za'
         }])
@@ -174,18 +173,6 @@ export default function AddCorrection({ onBack }: AddCorrectionProps) {
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Mode</label>
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="override">Override</option>
-              <option value="append">Append</option>
-            </select>
           </div>
 
           <div>
