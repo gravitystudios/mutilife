@@ -8,6 +8,7 @@ import { Order } from '@/lib/supabaseServer'
 export default function InProgressTab() {
   const [deliveryOrders, setDeliveryOrders] = useState<Order[]>([])
   const [collectionOrders, setCollectionOrders] = useState<Order[]>([])
+  const [manualUploadOrders, setManualUploadOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set())
 
@@ -20,6 +21,7 @@ export default function InProgressTab() {
       const data = await res.json()
       setDeliveryOrders(data.delivery)
       setCollectionOrders(data.collection)
+      setManualUploadOrders(data.manualUpload)
     } catch (error) {
       toast.error('Failed to load in-progress orders')
     } finally {
@@ -31,7 +33,7 @@ export default function InProgressTab() {
     fetchInProgressOrders()
   }, [])
 
-  const handleUpdateStatus = async (orderId: number, newStatus: 'DROPPED_OFF' | 'COLLECTED', isDelivery: boolean) => {
+  const handleUpdateStatus = async (orderId: number, newStatus: 'DROPPED_OFF' | 'COLLECTED' | 'UPLOADED', orderType: 'delivery' | 'collection' | 'upload') => {
     setUpdatingIds(prev => new Set(prev).add(orderId))
 
     try {
@@ -44,10 +46,12 @@ export default function InProgressTab() {
       if (!res.ok) throw new Error('Failed to update order')
 
       // Optimistic UI update
-      if (isDelivery) {
+      if (orderType === 'delivery') {
         setDeliveryOrders(prev => prev.filter(order => order.id !== orderId))
-      } else {
+      } else if (orderType === 'collection') {
         setCollectionOrders(prev => prev.filter(order => order.id !== orderId))
+      } else {
+        setManualUploadOrders(prev => prev.filter(order => order.id !== orderId))
       }
 
       toast.success('Order updated successfully')
@@ -62,8 +66,10 @@ export default function InProgressTab() {
     }
   }
 
-  const OrderCard = ({ order, isDelivery }: { order: Order; isDelivery: boolean }) => {
+  const OrderCard = ({ order, orderType }: { order: Order; orderType: 'delivery' | 'collection' | 'upload' }) => {
     const isUpdating = updatingIds.has(order.id)
+    const buttonText = orderType === 'delivery' ? 'Dropped-off' : orderType === 'collection' ? 'Collected' : 'Uploaded'
+    const newStatus = orderType === 'delivery' ? 'DROPPED_OFF' : orderType === 'collection' ? 'COLLECTED' : 'UPLOADED'
 
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition">
@@ -97,7 +103,7 @@ export default function InProgressTab() {
               <p className="text-xs sm:text-sm text-gray-600">No items</p>
             )}
           </div>
-          {isDelivery && (
+          {orderType === 'delivery' && (
             <>
               {order.waybill_no && (
                 <div>
@@ -118,7 +124,7 @@ export default function InProgressTab() {
         </div>
 
         <button
-          onClick={() => handleUpdateStatus(order.id, isDelivery ? 'DROPPED_OFF' : 'COLLECTED', isDelivery)}
+          onClick={() => handleUpdateStatus(order.id, newStatus, orderType)}
           disabled={isUpdating}
           className={`w-full py-2 px-4 rounded-md text-xs sm:text-sm font-medium transition ${
             isUpdating
@@ -126,7 +132,7 @@ export default function InProgressTab() {
               : 'bg-green-600 hover:bg-green-700 text-white'
           }`}
         >
-          {isUpdating ? 'Updating...' : isDelivery ? 'Dropped-off' : 'Collected'}
+          {isUpdating ? 'Updating...' : buttonText}
         </button>
       </div>
     )
@@ -162,7 +168,7 @@ export default function InProgressTab() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {deliveryOrders.map(order => (
-              <OrderCard key={order.id} order={order} isDelivery={true} />
+              <OrderCard key={order.id} order={order} orderType="delivery" />
             ))}
           </div>
         )}
@@ -182,7 +188,27 @@ export default function InProgressTab() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {collectionOrders.map(order => (
-              <OrderCard key={order.id} order={order} isDelivery={false} />
+              <OrderCard key={order.id} order={order} orderType="collection" />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Manual Upload (In Progress)</h2>
+          <span className="px-2 sm:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium">
+            {manualUploadOrders.length} orders
+          </span>
+        </div>
+        {manualUploadOrders.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-6 sm:p-8 text-center text-sm sm:text-base text-gray-500">
+            No manual upload orders in progress
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {manualUploadOrders.map(order => (
+              <OrderCard key={order.id} order={order} orderType="upload" />
             ))}
           </div>
         )}

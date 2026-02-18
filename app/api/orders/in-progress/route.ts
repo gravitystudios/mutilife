@@ -11,7 +11,7 @@ export async function GET() {
     const { data, error } = await supabaseServer
       .from('orders_tracking')
       .select('*')
-      .or('order_status.eq.NOT_DROPPED_OFF,order_status.eq.NOT_COLLECTED')
+      .or('order_status.eq.NOT_DROPPED_OFF,order_status.eq.NOT_COLLECTED,order_status.eq.NOT_UPLOADED')
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -24,8 +24,11 @@ export async function GET() {
       order.collection_method === 'COLLECTION' && 
       order.order_status === 'NOT_COLLECTED'
     ) || []
+    const manualUpload = data?.filter(order => 
+      order.order_status === 'NOT_UPLOADED'
+    ) || []
 
-    return NextResponse.json({ delivery, collection })
+    return NextResponse.json({ delivery, collection, manualUpload })
   } catch (error) {
     console.error('In-progress orders fetch error:', error)
     return NextResponse.json(

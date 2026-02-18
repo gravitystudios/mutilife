@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import AllOrdersTab from '../components/AllOrdersTab'
 import InProgressTab from '../components/InProgressTab'
+import ChatbotTab from '../components/ChatbotTab'
 
 export default function DashboardClient() {
-  const [activeTab, setActiveTab] = useState<'all' | 'in-progress'>('all')
+  const [activeTab, setActiveTab] = useState<'all' | 'in-progress' | 'chatbot'>('all')
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -62,10 +63,20 @@ export default function DashboardClient() {
             >
               Orders in Progress
             </button>
+            <button
+              onClick={() => setActiveTab('chatbot')}
+              className={`${
+                activeTab === 'chatbot'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition`}
+            >
+              Chatbot
+            </button>
           </nav>
         </div>
 
-        {activeTab === 'all' ? <AllOrdersTab /> : <InProgressTab />}
+        {activeTab === 'all' ? <AllOrdersTab /> : activeTab === 'in-progress' ? <InProgressTab /> : <ChatbotTab />}
       </div>
     </div>
   )

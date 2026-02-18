@@ -1,0 +1,55 @@
+{
+  "name": "KB - Core - Get Current",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "kb/core/get",
+        "responseMode": "lastNode"
+      },
+      "id": "webhook_get_core",
+      "name": "Webhook (GET Core KB)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select kb_version, content, updated_by, change_note, created_at\nfrom core_kb_versions\nwhere is_active = true\norder by created_at desc\nlimit 1;"
+      },
+      "id": "db_select_active_core",
+      "name": "DB Select Active Core KB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [560, 300],
+      "credentials": {
+        "postgres": {
+          "id": "__REPLACE__",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"ok\": true,\n  \"kb_version\": $json.kb_version,\n  \"content\": $json.content,\n  \"updated_by\": $json.updated_by,\n  \"change_note\": $json.change_note,\n  \"updated_at\": $json.created_at\n} }}"
+      },
+      "id": "respond_get_core",
+      "name": "Respond JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [820, 300]
+    }
+  ],
+  "connections": {
+    "Webhook (GET Core KB)": {
+      "main": [[{ "node": "DB Select Active Core KB", "type": "main", "index": 0 }]]
+    },
+    "DB Select Active Core KB": {
+      "main": [[{ "node": "Respond JSON", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "versionId": "1"
+}

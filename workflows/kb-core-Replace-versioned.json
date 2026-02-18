@@ -1,0 +1,130 @@
+{
+  "name": "KB - Core - Replace (Versioned) (Import Safe)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kb/core/replace",
+        "responseMode": "responseNode"
+      },
+      "id": "b1_webhook_replace",
+      "name": "Webhook (POST Replace Core KB)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [260, 320]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "kb_version", "value": "={{ $now.toISO() }}" },
+            { "name": "content", "value": "={{ $json.content }}" },
+            { "name": "updated_by", "value": "={{ $json.updated_by || null }}" },
+            { "name": "change_note", "value": "={{ $json.note || null }}" }
+          ]
+        }
+      },
+      "id": "b2_set_fields",
+      "name": "Set Version + Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [520, 320]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update core_kb_versions set is_active = false where is_active = true;"
+      },
+      "id": "b3_db_deactivate",
+      "name": "DB Deactivate Old Core KB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [760, 260],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_ME",
+          "name": "REPLACE_ME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "insert into core_kb_versions (kb_version, content, is_active, updated_by, change_note)\nvalues (\n  '{{$json.kb_version}}',\n  '{{$json.content.replaceAll(\"'\",\"''\")}}',\n  true,\n  {{ $json.updated_by ? \"'\" + $json.updated_by.replaceAll(\"'\",\"''\") + \"'\" : \"null\" }},\n  {{ $json.change_note ? \"'\" + $json.change_note.replaceAll(\"'\",\"''\") + \"'\" : \"null\" }}\n);"
+      },
+      "id": "b4_db_insert",
+      "name": "DB Insert New Core KB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [1000, 260],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_ME",
+          "name": "REPLACE_ME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, kb_version: $json.kb_version } }}",
+        "options": {}
+      },
+      "id": "b5_respond",
+      "name": "Respond JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1240, 320]
+    }
+  ],
+  "connections": {
+    "Webhook (POST Replace Core KB)": {
+      "main": [
+        [
+          {
+            "node": "Set Version + Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Version + Fields": {
+      "main": [
+        [
+          {
+            "node": "DB Deactivate Old Core KB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB Deactivate Old Core KB": {
+      "main": [
+        [
+          {
+            "node": "DB Insert New Core KB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB Insert New Core KB": {
+      "main": [
+        [
+          {
+            "node": "Respond JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}
