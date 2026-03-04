@@ -20,6 +20,7 @@ export type Order = {
   custom_tracking_reference: string
   order_status: string
   fulfillment_status: string | null
+  fulfillment_status_updated_at: string | null
   customer_name: string
   customer_phone: string
   entered_address: string
