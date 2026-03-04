@@ -90,6 +90,8 @@ export default function AllOrdersTab() {
 
   useEffect(() => {
     fetchOrders(true)
+    const interval = setInterval(() => fetchOrders(true), 30000)
+    return () => clearInterval(interval)
   }, [timeFilter, customFrom, customTo])
 
   const handleSearch = () => {
@@ -258,6 +260,11 @@ export default function AllOrdersTab() {
                       </td>
                       <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {order.fulfillment_status || 'N/A'}
+                        {order.fulfillment_status_updated_at && (
+                          <div className="text-xs text-gray-400">
+                            {format(new Date(order.fulfillment_status_updated_at), 'MMM d, HH:mm')}
+                          </div>
+                        )}
                       </td>
                       <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {format(new Date(order.created_at), 'MMM d, yyyy HH:mm')}

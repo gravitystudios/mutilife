@@ -35,3 +35,19 @@ export async function isAuthenticated(): Promise<boolean> {
     return false
   }
 }
+
+export async function verifyAuth(request: Request) {
+  try {
+    const cookieHeader = request.headers.get('cookie')
+    if (!cookieHeader) return { authenticated: false }
+
+    const authCookie = cookieHeader.split(';').find(c => c.trim().startsWith(AUTH_COOKIE_NAME + '='))
+    if (!authCookie) return { authenticated: false }
+
+    const token = authCookie.split('=')[1]
+    const { payload } = await jwtVerify(token, secret)
+    return { authenticated: payload.authenticated === true }
+  } catch {
+    return { authenticated: false }
+  }
+}

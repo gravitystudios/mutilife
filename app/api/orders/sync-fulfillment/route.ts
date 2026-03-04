@@ -12,6 +12,8 @@ export async function POST() {
       .from('orders_tracking')
       .select('id, waybill_no')
       .not('waybill_no', 'is', null)
+      .is('fulfillment_status', null)
+      .limit(20)
 
     if (error) throw error
 
@@ -25,7 +27,7 @@ export async function POST() {
 
     for (const order of orders || []) {
       try {
-        await new Promise(resolve => setTimeout(resolve, 500))
+        await new Promise(resolve => setTimeout(resolve, 200))
         
         const res = await fetch(
           `https://api-pudo.co.za/api/v1/tracking/shipments/public?waybill=${order.waybill_no}`,
@@ -49,6 +51,7 @@ export async function POST() {
             .from('orders_tracking')
             .update({
               fulfillment_status: status,
+              fulfillment_status_updated_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
             .eq('id', order.id)
