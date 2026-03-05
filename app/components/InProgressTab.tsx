@@ -11,6 +11,7 @@ export default function InProgressTab() {
   const [manualUploadOrders, setManualUploadOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set())
+  const [waybillInputs, setWaybillInputs] = useState<{[key: number]: string}>({})
 
   const fetchInProgressOrders = async () => {
     setLoading(true)
@@ -37,10 +38,17 @@ export default function InProgressTab() {
     setUpdatingIds(prev => new Set(prev).add(orderId))
 
     try {
+      const body: any = { order_status: newStatus }
+      
+      // Add waybill for manual uploads
+      if (orderType === 'upload' && waybillInputs[orderId]) {
+        body.waybill_no = waybillInputs[orderId]
+      }
+
       const res = await fetch(`/api/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_status: newStatus })
+        body: JSON.stringify(body)
       })
 
       if (!res.ok) throw new Error('Failed to update order')
@@ -52,6 +60,12 @@ export default function InProgressTab() {
         setCollectionOrders(prev => prev.filter(order => order.id !== orderId))
       } else {
         setManualUploadOrders(prev => prev.filter(order => order.id !== orderId))
+        // Clear waybill input
+        setWaybillInputs(prev => {
+          const newInputs = { ...prev }
+          delete newInputs[orderId]
+          return newInputs
+        })
       }
 
       toast.success('Order updated successfully')
@@ -122,6 +136,18 @@ export default function InProgressTab() {
             </>
           )}
         </div>
+
+        {orderType === 'upload' && (
+          <div className="mb-3">
+            <input
+              type="text"
+              placeholder="Enter waybill number"
+              value={waybillInputs[order.id] || ''}
+              onChange={(e) => setWaybillInputs(prev => ({ ...prev, [order.id]: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        )}
 
         <button
           onClick={() => handleUpdateStatus(order.id, newStatus, orderType)}
