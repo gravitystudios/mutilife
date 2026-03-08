@@ -11,9 +11,10 @@ import TestTab from '../components/TestTab'
 import InventoryTab from '../components/InventoryTab'
 
 import AccountBalanceTab from '../components/AccountBalanceTab'
+import FulfillmentTab from '../components/FulfillmentTab'
 
 export default function DashboardClient() {
-  const [activeTab, setActiveTab] = useState<'all' | 'in-progress' | 'chatbot' | 'inventory'>('all')
+  const [activeTab, setActiveTab] = useState<'all' | 'in-progress' | 'chatbot' | 'inventory' | 'fulfillment'>('all')
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -90,10 +91,20 @@ export default function DashboardClient() {
             >
               Inventory
             </button>
+            <button
+              onClick={() => setActiveTab('fulfillment')}
+              className={`${
+                activeTab === 'fulfillment'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition`}
+            >
+              Fulfillment
+            </button>
           </nav>
         </div>
 
-        {activeTab === 'all' ? <AllOrdersTab /> : activeTab === 'in-progress' ? <InProgressTab /> : activeTab === 'inventory' ? <InventoryTab /> : <ChatbotTab />}
+        {activeTab === 'all' ? <AllOrdersTab /> : activeTab === 'in-progress' ? <InProgressTab /> : activeTab === 'inventory' ? <InventoryTab /> : activeTab === 'fulfillment' ? <FulfillmentTab /> : <ChatbotTab />}
       </div>
     </div>
   )

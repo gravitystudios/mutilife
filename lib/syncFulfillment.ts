@@ -4,7 +4,7 @@ export async function syncFulfillmentStatus() {
   try {
     const { data: orders, error } = await supabaseServer
       .from('orders_tracking')
-      .select('id, waybill_no')
+      .select('id, waybill_no, order_number, customer_name, customer_phone, fulfillment_status')
       .not('waybill_no', 'is', null)
 
     if (error) throw error
@@ -39,6 +39,22 @@ export async function syncFulfillmentStatus() {
               updated_at: new Date().toISOString()
             })
             .eq('id', order.id)
+
+          if (status === 'in-transit' && order.fulfillment_status !== 'in-transit') {
+            const webhookUrl = process.env.N8N_WEBHOOK_URL
+            if (webhookUrl) {
+              await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: order.customer_name?.trim(),
+                  number: order.customer_phone?.trim(),
+                  orderNumber: order.order_number?.trim(),
+                  waybill: order.waybill_no?.trim()
+                })
+              }).catch(e => console.error(`Webhook failed for order ${order.order_number}:`, e))
+            }
+          }
         }
       } catch (error) {
         console.error(`Failed to sync waybill ${order.waybill_no}:`, error)
