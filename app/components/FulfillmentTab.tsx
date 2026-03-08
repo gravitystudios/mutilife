@@ -38,7 +38,12 @@ export default function FulfillmentTab() {
         })
       })
       if (!res.ok) throw new Error()
-      toast.success(`Notified for order #${order.order_number}`)
+      const result = await res.json()
+      if (result.skipped) {
+        toast('Order already fulfilled in Shopify', { icon: '⚠️' })
+      } else {
+        toast.success(`Notified for order #${order.order_number}`)
+      }
     } catch {
       toast.error('Failed to send notification')
     } finally {

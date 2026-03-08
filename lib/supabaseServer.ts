@@ -29,6 +29,7 @@ export type Order = {
   collection_method: 'delivery' | 'collection' | 'DELIVERY' | 'COLLECTION'
   delivery_type: string | null
   locker_name: string | null
+  shopify_fulfilled: boolean | null
   waybill_no: string | null
   pin: string | null
   created_at: string

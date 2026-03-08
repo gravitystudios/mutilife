@@ -18,7 +18,7 @@ export async function syncFulfillmentStatus() {
     for (const order of orders || []) {
       try {
         const res = await fetch(
-          `https://api-pudo.co.za/api/v1/tracking/shipments/public?waybill=${order.waybill_no}`,
+          `https://api-pudo.co.za/api/v1/shipments?custom_tracking_reference=${order.waybill_no}`,
           {
             headers: {
               'Authorization': `Bearer ${bearerToken}`

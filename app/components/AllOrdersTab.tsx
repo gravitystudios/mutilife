@@ -17,6 +17,10 @@ export default function AllOrdersTab() {
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [pudoStatus, setPudoStatus] = useState<string | null>(null)
+  const [shopifyStatus, setShopifyStatus] = useState<string | null>(null)
+  const [checkingPudo, setCheckingPudo] = useState(false)
+  const [checkingShopify, setCheckingShopify] = useState(false)
   const limit = 50
 
   const getDateRange = () => {
@@ -90,9 +94,35 @@ export default function AllOrdersTab() {
 
   useEffect(() => {
     fetchOrders(true)
-    const interval = setInterval(() => fetchOrders(true), 30000)
-    return () => clearInterval(interval)
   }, [timeFilter, customFrom, customTo])
+
+  const checkPudo = async (waybill: string) => {
+    setCheckingPudo(true)
+    setPudoStatus(null)
+    try {
+      const res = await fetch(`/api/pudo?waybill=${waybill}`)
+      const data = await res.json()
+      setPudoStatus(data?.status || data?.data?.[0]?.status || 'No status found')
+    } catch {
+      setPudoStatus('Failed to fetch')
+    } finally {
+      setCheckingPudo(false)
+    }
+  }
+
+  const checkShopify = async (orderNumber: string) => {
+    setCheckingShopify(true)
+    setShopifyStatus(null)
+    try {
+      const res = await fetch(`/api/shopify?order_number=%23${orderNumber.trim()}`)
+      const data = await res.json()
+      setShopifyStatus(data?.order?.fulfillment_status || 'unfulfilled')
+    } catch {
+      setShopifyStatus('Failed to fetch')
+    } finally {
+      setCheckingShopify(false)
+    }
+  }
 
   const handleSearch = () => {
     fetchOrders(true)
@@ -233,6 +263,12 @@ export default function AllOrdersTab() {
                         Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        PUDO Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Shopify
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Created
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -242,7 +278,7 @@ export default function AllOrdersTab() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {orders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50">
+                      <tr key={order.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => { setSelectedOrder(order); setPudoStatus(null); setShopifyStatus(null) }}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {order.order_number}
                         </td>
@@ -255,6 +291,20 @@ export default function AllOrdersTab() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
                             {order.order_status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {order.fulfillment_status ? (
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                              {order.fulfillment_status}
+                            </span>
+                          ) : <span className="text-gray-400 text-xs">—</span>}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            order.shopify_fulfilled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {order.shopify_fulfilled ? 'Fulfilled' : 'Unfulfilled'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -283,9 +333,21 @@ export default function AllOrdersTab() {
                         <h3 className="font-medium text-gray-900">#{order.order_number}</h3>
                         <p className="text-sm text-gray-600">{order.customer_name}</p>
                       </div>
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                        {order.order_status}
-                      </span>
+                      <div className="flex flex-col gap-1 items-end">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          {order.order_status}
+                        </span>
+                        {order.fulfillment_status && (
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                            {order.fulfillment_status}
+                          </span>
+                        )}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          order.shopify_fulfilled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {order.shopify_fulfilled ? 'Fulfilled' : 'Unfulfilled'}
+                        </span>
+                      </div>
                     </div>
                     <div className="text-sm text-gray-500">
                       <p>{format(new Date(order.created_at), 'MMM d, yyyy HH:mm')}</p>
@@ -326,7 +388,7 @@ export default function AllOrdersTab() {
                   <h2 className="text-2xl font-bold text-gray-900">Order #{selectedOrder.order_number}</h2>
                   <p className="text-sm text-gray-500">{format(new Date(selectedOrder.created_at), 'MMM d, yyyy HH:mm')}</p>
                 </div>
-                <button onClick={() => setSelectedOrder(null)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => { setSelectedOrder(null); setPudoStatus(null); setShopifyStatus(null) }} className="text-gray-400 hover:text-gray-600">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -334,7 +396,7 @@ export default function AllOrdersTab() {
               </div>
 
               <div className="space-y-4">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <span className="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
                     {selectedOrder.order_status}
                   </span>
@@ -344,6 +406,32 @@ export default function AllOrdersTab() {
                     </span>
                   )}
                 </div>
+
+                <div className="flex gap-2 flex-wrap">
+                  {selectedOrder.waybill_no && (
+                    <button
+                      onClick={() => checkPudo(selectedOrder.waybill_no!)}
+                      disabled={checkingPudo}
+                      className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 transition"
+                    >
+                      {checkingPudo ? 'Checking...' : 'Check PUDO Status'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => checkShopify(selectedOrder.order_number)}
+                    disabled={checkingShopify}
+                    className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 transition"
+                  >
+                    {checkingShopify ? 'Checking...' : 'Check Shopify Status'}
+                  </button>
+                </div>
+
+                {pudoStatus && (
+                  <p className="text-sm text-purple-700"><span className="font-medium">PUDO:</span> {pudoStatus}</p>
+                )}
+                {shopifyStatus && (
+                  <p className="text-sm text-green-700"><span className="font-medium">Shopify:</span> {shopifyStatus}</p>
+                )}
 
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Customer Information</h3>
