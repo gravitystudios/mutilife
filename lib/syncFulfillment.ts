@@ -6,6 +6,7 @@ export async function syncFulfillmentStatus() {
       .from('orders_tracking')
       .select('id, waybill_no, order_number, customer_name, customer_phone, fulfillment_status')
       .not('waybill_no', 'is', null)
+      .neq('fulfillment_status', 'delivered')
 
     if (error) throw error
 
@@ -17,6 +18,8 @@ export async function syncFulfillmentStatus() {
 
     for (const order of orders || []) {
       try {
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
         const res = await fetch(
           `https://api-pudo.co.za/api/v1/shipments?custom_tracking_reference=${order.waybill_no}`,
           {
@@ -31,6 +34,7 @@ export async function syncFulfillmentStatus() {
         const data = await res.json()
         if (data && data.length > 0) {
           const status = data[0].status
+          const previousStatus = order.fulfillment_status
 
           await supabaseServer
             .from('orders_tracking')
@@ -40,19 +44,26 @@ export async function syncFulfillmentStatus() {
             })
             .eq('id', order.id)
 
-          if (status === 'in-transit' && order.fulfillment_status !== 'in-transit') {
+          // Fire webhook when status changes to in-transit
+          if (status === 'in-transit' && previousStatus !== 'in-transit') {
+            console.log(`Status changed to in-transit for order ${order.order_number}, firing webhook`)
             const webhookUrl = process.env.N8N_WEBHOOK_URL
             if (webhookUrl) {
-              await fetch(webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  name: order.customer_name?.trim(),
-                  number: order.customer_phone?.trim(),
-                  orderNumber: order.order_number?.trim(),
-                  waybill: order.waybill_no?.trim()
+              try {
+                const webhookRes = await fetch(webhookUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    name: order.customer_name?.trim(),
+                    number: order.customer_phone?.trim(),
+                    orderNumber: order.order_number?.trim(),
+                    waybill: order.waybill_no?.trim()
+                  })
                 })
-              }).catch(e => console.error(`Webhook failed for order ${order.order_number}:`, e))
+                console.log(`Webhook fired for ${order.order_number}, status: ${webhookRes.status}`)
+              } catch (e) {
+                console.error(`Webhook failed for order ${order.order_number}:`, e)
+              }
             }
           }
         }
@@ -65,6 +76,7 @@ export async function syncFulfillmentStatus() {
   }
 }
 
+// Auto-sync every 5 minutes in production
 if (process.env.NODE_ENV === 'production') {
-  setInterval(syncFulfillmentStatus, 30 * 60 * 1000)
+  setInterval(syncFulfillmentStatus, 5 * 60 * 1000)
 }

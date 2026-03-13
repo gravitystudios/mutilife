@@ -15,7 +15,20 @@ import FulfillmentTab from '../components/FulfillmentTab'
 
 export default function DashboardClient() {
   const [activeTab, setActiveTab] = useState<'all' | 'in-progress' | 'chatbot' | 'inventory' | 'fulfillment'>('all')
+  const [inProgressCount, setInProgressCount] = useState<number | null>(null)
+  const [fulfillmentCount, setFulfillmentCount] = useState<number | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    fetch('/api/orders/in-progress')
+      .then(r => r.json())
+      .then(d => setInProgressCount((d.delivery?.length || 0) + (d.collection?.length || 0) + (d.manualUpload?.length || 0)))
+      .catch(() => {})
+    fetch('/api/orders/fulfillment')
+      .then(r => r.json())
+      .then(d => setFulfillmentCount((d.inTransit?.length || 0) + (d.inLocker?.length || 0) + (d.outForDelivery?.length || 0)))
+      .catch(() => {})
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -49,6 +62,17 @@ export default function DashboardClient() {
       </header>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-white rounded-lg shadow p-4">
+            <p className="text-xs text-gray-500">In Progress</p>
+            <p className="text-2xl font-bold text-red-600">{inProgressCount ?? '—'}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <p className="text-xs text-gray-500">In Transit</p>
+            <p className="text-2xl font-bold text-orange-500">{fulfillmentCount ?? '—'}</p>
+          </div>
+        </div>
+
         <div className="border-b border-gray-200 mb-4 sm:mb-6 overflow-x-auto">
           <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
             <button
@@ -69,7 +93,9 @@ export default function DashboardClient() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition`}
             >
-              Orders in Progress
+              Orders in Progress {inProgressCount !== null && inProgressCount > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-red-500 text-white">{inProgressCount}</span>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('chatbot')}
@@ -99,7 +125,9 @@ export default function DashboardClient() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition`}
             >
-              Fulfillment
+              Fulfillment {fulfillmentCount !== null && fulfillmentCount > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-orange-500 text-white">{fulfillmentCount}</span>
+              )}
             </button>
           </nav>
         </div>

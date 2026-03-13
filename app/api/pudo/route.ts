@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     if (waybill) {
       const res = await fetch(
-        `https://api-pudo.co.za/api/v1/shipments?custom_tracking_reference=${waybill}`,
+        `https://api-pudo.co.za/api/v1/tracking/shipments?waybill=${waybill}`,
         { headers: { 'Authorization': `Bearer ${process.env.PUDO_API_TOKEN}` } }
       )
       if (!res.ok) throw new Error('Failed to fetch tracking')

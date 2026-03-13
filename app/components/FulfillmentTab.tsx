@@ -11,6 +11,7 @@ export default function FulfillmentTab() {
   const [outForDelivery, setOutForDelivery] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [notifyingIds, setNotifyingIds] = useState<Set<number>>(new Set())
+  const [notifiedIds, setNotifiedIds] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     fetch('/api/orders/fulfillment')
@@ -26,33 +27,52 @@ export default function FulfillmentTab() {
 
   const handleNotify = async (order: Order) => {
     setNotifyingIds(prev => new Set(prev).add(order.id))
+    
+    const payload = {
+      name: order.customer_name?.trim(),
+      number: order.customer_phone?.trim(),
+      orderNumber: order.order_number?.trim(),
+      waybill: order.waybill_no?.trim()
+    }
+    
+    console.log('Sending notification payload:', payload)
+    
     try {
       const res = await fetch('/api/orders/notify-transit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: order.customer_name?.trim(),
-          number: order.customer_phone?.trim(),
-          orderNumber: order.order_number?.trim(),
-          waybill: order.waybill_no?.trim()
-        })
+        body: JSON.stringify(payload)
       })
-      if (!res.ok) throw new Error()
+      
       const result = await res.json()
+      console.log('API response:', result)
+      
+      if (!res.ok) {
+        console.error('API error:', result)
+        throw new Error(result.error || `HTTP ${res.status}`)
+      }
+      
       if (result.skipped) {
         toast('Order already fulfilled in Shopify', { icon: '⚠️' })
+        setNotifiedIds(prev => new Set(prev).add(order.id))
       } else {
         toast.success(`Notified for order #${order.order_number}`)
+        setNotifiedIds(prev => new Set(prev).add(order.id))
       }
-    } catch {
-      toast.error('Failed to send notification')
+    } catch (error) {
+      console.error('Notification failed:', error)
+      toast.error(`Failed to send notification: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setNotifyingIds(prev => { const s = new Set(prev); s.delete(order.id); return s })
     }
   }
 
-  const OrderCard = ({ order, showNotify }: { order: Order; showNotify?: boolean }) => (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition">
+  const OrderCard = ({ order, showNotify }: { order: Order; showNotify?: boolean }) => {
+    const isNotified = notifiedIds.has(order.id)
+    return (
+    <div className={`bg-white border rounded-lg p-3 sm:p-4 hover:shadow-md transition ${
+      isNotified ? 'border-gray-200 opacity-50' : 'border-gray-200'
+    }`}>
       <div className="flex justify-between items-start mb-2">
         <div>
           <h3 className="text-base font-semibold text-gray-900">Order #{order.order_number}</h3>
@@ -70,16 +90,18 @@ export default function FulfillmentTab() {
       {showNotify && (
         <button
           onClick={() => handleNotify(order)}
-          disabled={notifyingIds.has(order.id)}
+          disabled={notifyingIds.has(order.id) || isNotified}
           className={`w-full py-2 px-4 rounded-md text-sm font-medium transition ${
-            notifyingIds.has(order.id) ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
+            isNotified ? 'bg-gray-300 text-gray-500 cursor-not-allowed' :
+            notifyingIds.has(order.id) ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
           }`}
         >
-          {notifyingIds.has(order.id) ? 'Notifying...' : 'Notify Customer'}
+          {isNotified ? 'Notified ✓' : notifyingIds.has(order.id) ? 'Notifying...' : 'Notify Customer'}
         </button>
       )}
     </div>
-  )
+    )
+  }
 
   const Section = ({ title, orders, showNotify }: { title: string; orders: Order[]; showNotify?: boolean }) => (
     <div>
