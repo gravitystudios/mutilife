@@ -102,7 +102,7 @@ export default function AllOrdersTab() {
     try {
       const res = await fetch(`/api/pudo?waybill=${waybill}`)
       const data = await res.json()
-      setPudoStatus(data?.status || data?.data?.[0]?.status || 'No status found')
+      setPudoStatus(data?.status || 'No status found')
     } catch {
       setPudoStatus('Failed to fetch')
     } finally {

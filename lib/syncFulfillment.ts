@@ -32,8 +32,9 @@ export async function syncFulfillmentStatus() {
         if (!res.ok) continue
 
         const data = await res.json()
-        if (data && data.length > 0) {
-          const status = data[0].status
+        const match = Array.isArray(data) ? data.find((s: any) => s.custom_tracking_reference === order.waybill_no) : null
+        if (match) {
+          const status = match.status
           const previousStatus = order.fulfillment_status
 
           await supabaseServer

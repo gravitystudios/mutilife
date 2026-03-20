@@ -57,6 +57,23 @@ export async function PATCH(
         // Update waybill if provided
         if (body.waybill_no) {
           updateData.waybill_no = body.waybill_no
+          
+          // Auto-fetch fulfillment status from PUDO when waybill is added
+          try {
+            const pudoRes = await fetch(
+              `https://api-pudo.co.za/api/v1/tracking/shipments/public?waybill=${body.waybill_no}`,
+              { headers: { 'Authorization': `Bearer ${process.env.PUDO_API_TOKEN}` } }
+            )
+            if (pudoRes.ok) {
+              const pudoData = await pudoRes.json()
+              if (pudoData?.status) {
+                updateData.fulfillment_status = pudoData.status
+                updateData.fulfillment_status_updated_at = new Date().toISOString()
+              }
+            }
+          } catch (error) {
+            console.error('Failed to fetch PUDO status:', error)
+          }
         }
         
         if (currentOrder?.collection_method === 'DELIVERY') {
@@ -72,7 +89,12 @@ export async function PATCH(
     }
     
     if (body.fulfillment_status) {
+      const validStatuses = ['deposit-pending', 'in-transit', 'in-locker', 'out-for-delivery', 'delivered', 'collected']
+      if (!validStatuses.includes(body.fulfillment_status)) {
+        return NextResponse.json({ error: 'Invalid fulfillment_status' }, { status: 400 })
+      }
       updateData.fulfillment_status = body.fulfillment_status
+      updateData.fulfillment_status_updated_at = new Date().toISOString()
     }
 
     const { data, error } = await supabaseServer

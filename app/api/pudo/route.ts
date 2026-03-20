@@ -11,12 +11,12 @@ export async function GET(request: NextRequest) {
   try {
     if (waybill) {
       const res = await fetch(
-        `https://api-pudo.co.za/api/v1/tracking/shipments?waybill=${waybill}`,
+        `https://api-pudo.co.za/api/v1/tracking/shipments/public?waybill=${waybill}`,
         { headers: { 'Authorization': `Bearer ${process.env.PUDO_API_TOKEN}` } }
       )
       if (!res.ok) throw new Error('Failed to fetch tracking')
       const data = await res.json()
-      return NextResponse.json({ status: data?.[0]?.status || null, data })
+      return NextResponse.json({ status: data?.status || null, data })
     }
 
     const res = await fetch('https://api-pudo.co.za/api/v1/shipments', {
