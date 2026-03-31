@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
   try {
     const bodyText = await request.text()
     
-    let rawShipments
+    let rawShipment
     try {
-      rawShipments = JSON.parse(bodyText)
+      rawShipment = JSON.parse(bodyText)
     } catch (parseError) {
       return NextResponse.json({ 
         error: 'Invalid JSON', 
@@ -59,33 +59,28 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    if (!Array.isArray(rawShipments)) {
+    if (!rawShipment || typeof rawShipment !== 'object') {
       return NextResponse.json({ 
-        error: 'Expected array of shipments', 
-        received: typeof rawShipments 
+        error: 'Expected shipment object'
       }, { status: 400 })
     }
-
-    if (rawShipments.length === 0) {
-      return NextResponse.json({ error: 'Empty shipments array' }, { status: 400 })
-    }
     
-    // Clean each shipment to only include PUDO fields
-    const shipments = rawShipments.map(cleanShipment)
+    // Clean the single shipment
+    const shipment = cleanShipment(rawShipment)
 
     const bearerToken = process.env.PUDO_API_TOKEN
     if (!bearerToken) {
       return NextResponse.json({ error: 'PUDO_API_TOKEN not configured' }, { status: 500 })
     }
 
-    // Send cleaned data to PUDO API
+    // Send single cleaned shipment to PUDO API
     const pudoRes = await fetch('https://api-pudo.co.za/api/v1/shipments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${bearerToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(shipments)
+      body: JSON.stringify(shipment)
     })
 
     const pudoData = await pudoRes.json()
