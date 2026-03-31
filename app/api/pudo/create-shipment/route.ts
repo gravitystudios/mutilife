@@ -73,12 +73,34 @@ export async function POST(request: NextRequest) {
     // Clean each shipment to only include PUDO fields
     const shipments = rawShipments.map(cleanShipment)
 
-    // Return cleaned data for inspection (PUDO API call disabled)
+    const bearerToken = process.env.PUDO_API_TOKEN
+    if (!bearerToken) {
+      return NextResponse.json({ error: 'PUDO_API_TOKEN not configured' }, { status: 500 })
+    }
+
+    // Send cleaned data to PUDO API
+    const pudoRes = await fetch('https://api-pudo.co.za/api/v1/shipments', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(shipments)
+    })
+
+    const pudoData = await pudoRes.json()
+
+    if (!pudoRes.ok) {
+      return NextResponse.json({ 
+        error: 'PUDO API failed', 
+        status: pudoRes.status,
+        pudoResponse: pudoData 
+      }, { status: pudoRes.status })
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Data received and cleaned',
-      cleanedShipments: shipments,
-      originalCount: rawShipments.length
+      pudoResponse: pudoData
     })
   } catch (error) {
     return NextResponse.json(
