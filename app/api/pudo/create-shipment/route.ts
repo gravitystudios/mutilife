@@ -24,9 +24,8 @@ export async function POST(request: NextRequest) {
 
     console.log('Parsed shipment data:', JSON.stringify(shipments, null, 2))
 
-    // Validate input
+    // Validate input is array
     if (!Array.isArray(shipments)) {
-      // If it's a single object, wrap it in an array
       if (typeof shipments === 'object' && shipments !== null) {
         shipments = [shipments]
       } else {
@@ -39,6 +38,28 @@ export async function POST(request: NextRequest) {
 
     if (shipments.length === 0) {
       return NextResponse.json({ error: 'Empty shipments array' }, { status: 400 })
+    }
+
+    // Validate each shipment has required fields
+    for (let i = 0; i < shipments.length; i++) {
+      const shipment = shipments[i]
+      const missing = []
+      
+      if (!shipment.collection_address?.terminal_id) missing.push('collection_address.terminal_id')
+      if (!shipment.collection_contact?.name) missing.push('collection_contact.name')
+      if (!shipment.collection_contact?.mobile_number) missing.push('collection_contact.mobile_number')
+      if (!shipment.delivery_address?.street_address) missing.push('delivery_address.street_address')
+      if (!shipment.delivery_address?.local_area) missing.push('delivery_address.local_area')
+      if (!shipment.delivery_contact?.name) missing.push('delivery_contact.name')
+      if (!shipment.delivery_contact?.mobile_number) missing.push('delivery_contact.mobile_number')
+      if (!shipment.service_level_code) missing.push('service_level_code')
+      
+      if (missing.length > 0) {
+        return NextResponse.json({ 
+          error: `Shipment ${i} missing required fields`, 
+          missingFields: missing 
+        }, { status: 400 })
+      }
     }
 
     // Send to PUDO API
