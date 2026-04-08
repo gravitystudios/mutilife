@@ -19,16 +19,22 @@ function cleanShipment(raw: any) {
   
   if (raw.delivery_address) {
     cleaned.delivery_address = {}
-    if (raw.delivery_address.lat !== undefined) cleaned.delivery_address.lat = raw.delivery_address.lat
-    if (raw.delivery_address.lng !== undefined) cleaned.delivery_address.lng = raw.delivery_address.lng
-    if (raw.delivery_address.street_address) cleaned.delivery_address.street_address = raw.delivery_address.street_address
-    if (raw.delivery_address.local_area) cleaned.delivery_address.local_area = raw.delivery_address.local_area
-    if (raw.delivery_address.suburb) cleaned.delivery_address.suburb = raw.delivery_address.suburb
-    if (raw.delivery_address.city) cleaned.delivery_address.city = raw.delivery_address.city
-    if (raw.delivery_address.code) cleaned.delivery_address.code = raw.delivery_address.code
-    if (raw.delivery_address.zone) cleaned.delivery_address.zone = raw.delivery_address.zone
-    if (raw.delivery_address.country) cleaned.delivery_address.country = raw.delivery_address.country
-    if (raw.delivery_address.type) cleaned.delivery_address.type = raw.delivery_address.type
+    // Locker to Locker: only terminal_id
+    if (raw.delivery_address.terminal_id) {
+      cleaned.delivery_address.terminal_id = raw.delivery_address.terminal_id
+    } else {
+      // Locker to Door: full address with geocoding
+      if (raw.delivery_address.lat !== undefined) cleaned.delivery_address.lat = raw.delivery_address.lat
+      if (raw.delivery_address.lng !== undefined) cleaned.delivery_address.lng = raw.delivery_address.lng
+      if (raw.delivery_address.street_address) cleaned.delivery_address.street_address = raw.delivery_address.street_address
+      if (raw.delivery_address.local_area) cleaned.delivery_address.local_area = raw.delivery_address.local_area
+      if (raw.delivery_address.suburb) cleaned.delivery_address.suburb = raw.delivery_address.suburb
+      if (raw.delivery_address.city) cleaned.delivery_address.city = raw.delivery_address.city
+      if (raw.delivery_address.code) cleaned.delivery_address.code = raw.delivery_address.code
+      if (raw.delivery_address.zone) cleaned.delivery_address.zone = raw.delivery_address.zone
+      if (raw.delivery_address.country) cleaned.delivery_address.country = raw.delivery_address.country
+      if (raw.delivery_address.type) cleaned.delivery_address.type = raw.delivery_address.type
+    }
   }
   
   if (raw.delivery_contact) {
@@ -41,6 +47,8 @@ function cleanShipment(raw: any) {
   if (raw.opt_in_rates) cleaned.opt_in_rates = raw.opt_in_rates
   if (raw.opt_in_time_based_rates) cleaned.opt_in_time_based_rates = raw.opt_in_time_based_rates
   if (raw.service_level_code) cleaned.service_level_code = raw.service_level_code
+  if (raw.collection_min_date) cleaned.collection_min_date = raw.collection_min_date
+  if (raw.delivery_min_date) cleaned.delivery_min_date = raw.delivery_min_date
   
   return cleaned
 }

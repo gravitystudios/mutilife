@@ -51,29 +51,9 @@ export async function PATCH(
           .eq('id', id)
           .single()
         
-        // Mark as manual upload processed
-        updateData.was_manual_upload = true
-        
         // Update waybill if provided
         if (body.waybill_no) {
           updateData.waybill_no = body.waybill_no
-          
-          // Auto-fetch fulfillment status from PUDO when waybill is added
-          try {
-            const pudoRes = await fetch(
-              `https://api-pudo.co.za/api/v1/tracking/shipments/public?waybill=${body.waybill_no}`,
-              { headers: { 'Authorization': `Bearer ${process.env.PUDO_API_TOKEN}` } }
-            )
-            if (pudoRes.ok) {
-              const pudoData = await pudoRes.json()
-              if (pudoData?.status) {
-                updateData.fulfillment_status = pudoData.status
-                updateData.fulfillment_status_updated_at = new Date().toISOString()
-              }
-            }
-          } catch (error) {
-            console.error('Failed to fetch PUDO status:', error)
-          }
         }
         
         if (currentOrder?.collection_method === 'DELIVERY') {
@@ -104,7 +84,10 @@ export async function PATCH(
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase update error:', JSON.stringify(error))
+      throw error
+    }
 
     // Send webhook if fulfillment_status changed to 'in-transit'
     if (body.fulfillment_status === 'in-transit') {
