@@ -13,7 +13,7 @@ function cleanShipment(raw: any) {
   if (raw.collection_contact) {
     cleaned.collection_contact = {}
     if (raw.collection_contact.name) cleaned.collection_contact.name = raw.collection_contact.name
-    if (raw.collection_contact.email) cleaned.collection_contact.email = raw.collection_contact.email
+    if (raw.collection_contact.email !== undefined) cleaned.collection_contact.email = raw.collection_contact.email
     if (raw.collection_contact.mobile_number) cleaned.collection_contact.mobile_number = raw.collection_contact.mobile_number
   }
   
@@ -40,7 +40,7 @@ function cleanShipment(raw: any) {
   if (raw.delivery_contact) {
     cleaned.delivery_contact = {}
     if (raw.delivery_contact.name) cleaned.delivery_contact.name = raw.delivery_contact.name
-    if (raw.delivery_contact.email) cleaned.delivery_contact.email = raw.delivery_contact.email
+    if (raw.delivery_contact.email !== undefined) cleaned.delivery_contact.email = raw.delivery_contact.email
     if (raw.delivery_contact.mobile_number) cleaned.delivery_contact.mobile_number = raw.delivery_contact.mobile_number
   }
   
