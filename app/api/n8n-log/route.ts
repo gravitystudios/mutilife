@@ -1,21 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseServer } from '@/lib/supabaseServer'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.text()
-    const headers = Object.fromEntries(req.headers.entries())
 
-    const { error } = await supabaseServer
-      .from('n8n_logs')
-      .insert({
-        headers: JSON.stringify(headers),
-        body,
-        received_at: new Date().toISOString(),
-      })
+    const bearerToken = process.env.PUDO_API_TOKEN
+    if (!bearerToken) {
+      return NextResponse.json({ error: 'PUDO_API_TOKEN not configured' }, { status: 500 })
+    }
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ success: true })
+    const pudoRes = await fetch('https://api-pudo.co.za/api/v1/shipments', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json',
+      },
+      body,
+    })
+
+    const pudoData = await pudoRes.json()
+
+    if (!pudoRes.ok) {
+      return NextResponse.json({ error: 'PUDO API failed', status: pudoRes.status, pudoResponse: pudoData }, { status: pudoRes.status })
+    }
+
+    return NextResponse.json({ success: true, pudoResponse: pudoData })
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 })
   }
