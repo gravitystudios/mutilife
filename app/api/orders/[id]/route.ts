@@ -69,10 +69,6 @@ export async function PATCH(
     }
     
     if (body.fulfillment_status) {
-      const validStatuses = ['deposit-pending', 'in-transit', 'in-locker', 'out-for-delivery', 'delivered', 'collected']
-      if (!validStatuses.includes(body.fulfillment_status)) {
-        return NextResponse.json({ error: 'Invalid fulfillment_status' }, { status: 400 })
-      }
       updateData.fulfillment_status = body.fulfillment_status
       updateData.fulfillment_status_updated_at = new Date().toISOString()
     }

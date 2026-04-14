@@ -102,7 +102,18 @@ export default function AllOrdersTab() {
     try {
       const res = await fetch(`/api/pudo?waybill=${waybill}`)
       const data = await res.json()
-      setPudoStatus(data?.status || 'No status found')
+      const status = data?.status || 'No status found'
+      setPudoStatus(status)
+
+      if (data?.status && selectedOrder) {
+        await fetch(`/api/orders/${selectedOrder.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fulfillment_status: data.status })
+        })
+        setSelectedOrder(prev => prev ? { ...prev, fulfillment_status: data.status } : prev)
+        setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, fulfillment_status: data.status } : o))
+      }
     } catch {
       setPudoStatus('Failed to fetch')
     } finally {
