@@ -39,7 +39,7 @@ export async function POST() {
         const timeoutId = setTimeout(() => controller.abort(), 10000)
         
         const res = await fetch(
-          `https://api-pudo.co.za/api/v1/shipments?custom_tracking_reference=${trackingRef}`,
+          `https://api-pudo.co.za/api/v1/tracking/shipments/public?waybill=${trackingRef}`,
           {
             headers: {
               'Authorization': `Bearer ${bearerToken}`
@@ -57,11 +57,11 @@ export async function POST() {
         }
 
         const data = await res.json()
-        if (data && data.length > 0 && data[0].status) {
+        if (data && data.status) {
           await supabaseServer
             .from('orders_tracking')
             .update({
-              fulfillment_status: data[0].status,
+              fulfillment_status: data.status,
               fulfillment_status_updated_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
