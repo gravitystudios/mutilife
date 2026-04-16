@@ -12,8 +12,7 @@ export async function POST() {
       .from('orders_tracking')
       .select('id, waybill_no, custom_tracking_reference')
       .or('waybill_no.not.is.null,custom_tracking_reference.not.is.null')
-      .not('order_status', 'in', '("DROPPED_OFF","COLLECTED")')
-      .limit(100)
+      .not('fulfillment_status', 'in', '("delivered","customer-collected","collected")')
 
     if (error) throw error
 
